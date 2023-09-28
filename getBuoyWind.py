@@ -5,18 +5,28 @@
 import scipy.io
 from urllib.request import urlretrieve
 from urllib.error import HTTPError
+import json
 
-stationIds = [8413320, 8443970, 8447435, 8449130, 8447930, 8452660, 8510560, 8418150, 8419870, 8454049, 8454000, 8461490, 8411060, 8531680, 8534720, 8452944]
-stationNames = ['Bar Harbor', 'Boston', 'Chatham', 'Nantucket', 'Woods Hole', 'Newport', 'Montauk', 'Portland', 'Seavey Island, ME', 'Quonset Point', 'Providence', 'New London', 'Cutler Faris Wharf', 'Sandy Hook', 'Altlantic City', 'Conimicut Light'] 
+NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
+
+with open(NOS_STATIONS_FILE_NAME) as stations_file:
+    stationsDict = json.load(stations_file)
+
+# stationIds = [8413320, 8443970, 8447435, 8449130, 8447930, 8452660, 8510560, 8418150, 8419870, 8454049, 8454000, 8461490, 8411060, 8531680, 8534720, 8452944]
+# stationNames = ['Bar Harbor', 'Boston', 'Chatham', 'Nantucket', 'Woods Hole', 'Newport', 'Montauk', 'Portland', 'Seavey Island, ME', 'Quonset Point', 'Providence', 'New London', 'Cutler Faris Wharf', 'Sandy Hook', 'Altlantic City', 'Conimicut Light'] 
+stationIds = [8413320, 8447435, 8449130, 8452660, 8418150, 8454049, 8454000, 8411060, 8531680, 8452944]
+stationNames = ['Bar Harbor', 'Chatham', 'Nantucket', 'Newport', 'Portland', 'Quonset Point', 'Providence', 'Cutler Faris Wharf', 'Sandy Hook', 'Conimicut Light'] 
+
 startDate = "20230912"
 endDate = "20230919"
 dateStartFormat = "2023-09-12"
     
-for x in range(len(stationNames)):
-# for x in range(1)
-    stationId = str(stationIds[x])
-    url='https://opendap.co-ops.nos.noaa.gov/erddap/tabledap/IOOS_Wind.mat?STATION_ID%2Ctime%2CWind_Speed%2CWind_Direction%2CWind_Gust&STATION_ID%3E=%22' + stationId + '%22&BEGIN_DATE%3E=%22' + startDate + '%22&END_DATE%3E=%22' + endDate + '%22&time%3E=' + dateStartFormat + 'T00%3A00%3A00Z'
-    matFilename = stationId + ".mat"
+badStations = []
+for key in stationsDict["NOS"].keys():
+    stationDict = stationsDict["NOS"][key]
+    stationId = stationDict["id"]
+    url = 'https://opendap.co-ops.nos.noaa.gov/erddap/tabledap/IOOS_Wind.mat?STATION_ID%2Ctime%2CWind_Speed%2CWind_Direction%2CWind_Gust&STATION_ID%3E=%22' + stationId + '%22&BEGIN_DATE%3E=%22' + startDate + '%22&END_DATE%3E=%22' + endDate + '%22&time%3E=' + dateStartFormat + 'T00%3A00%3A00Z'
+    matFilename = stationDict["id"] + ".mat"
     try:
     	urlretrieve(url, matFilename)
     	data = scipy.io.loadmat(matFilename)
@@ -25,7 +35,10 @@ for x in range(len(stationNames)):
     	print(data["IOOS_Wind"]["Wind_Speed"])
     	print(data["IOOS_Wind"]["Wind_Gust"])
     except HTTPError:
-    	print("oops bad url" + url)
+    	print("oops bad url")
+    	badStations.append(badStations.append(stationDict))
+    	
+    	
 #     print(type(data.get("Wind_Speed")))
 #     print(type(data.get("Wind_Direction")))
 	

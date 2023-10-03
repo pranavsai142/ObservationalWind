@@ -6,8 +6,11 @@ import scipy.io
 from urllib.request import urlretrieve
 from urllib.error import HTTPError
 import json
-
+import uuid
+from Encoders import NumpyEncoder
+        
 NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
+NOS_WIND_FILE_NAME = "NOS_Wind.json"
 
 with open(NOS_STATIONS_FILE_NAME) as stations_file:
     stationsDict = json.load(stations_file)
@@ -22,22 +25,32 @@ endDate = "20230919"
 dateStartFormat = "2023-09-12"
     
 badStations = []
+windDict = {}
 for key in stationsDict["NOS"].keys():
     stationDict = stationsDict["NOS"][key]
     stationId = stationDict["id"]
+    stationName = stationDict["name"]
     url = 'https://opendap.co-ops.nos.noaa.gov/erddap/tabledap/IOOS_Wind.mat?STATION_ID%2Ctime%2CWind_Speed%2CWind_Direction%2CWind_Gust&STATION_ID%3E=%22' + stationId + '%22&BEGIN_DATE%3E=%22' + startDate + '%22&END_DATE%3E=%22' + endDate + '%22&time%3E=' + dateStartFormat + 'T00%3A00%3A00Z'
     matFilename = stationDict["id"] + ".mat"
     try:
-    	urlretrieve(url, matFilename)
+#     	urlretrieve(url, matFilename)
     	data = scipy.io.loadmat(matFilename)
-    	print(data["IOOS_Wind"]["time"])
-    	print(data["IOOS_Wind"]["Wind_Direction"])
-    	print(data["IOOS_Wind"]["Wind_Speed"])
-    	print(data["IOOS_Wind"]["Wind_Gust"])
-    except HTTPError:
+    	unixTimes = data["IOOS_Wind"]["time"]
+    	windDirections = data["IOOS_Wind"]["Wind_Direction"]
+    	windSpeeds = data["IOOS_Wind"]["Wind_Speed"]
+    	windGusts = data["IOOS_Wind"]["Wind_Gust"]
+    	windDict[stationName] = {}
+    	windDict[stationName]["times"] = unixTimes
+    	windDict[stationName]["directions"] = windDirections
+    	windDict[stationName]["speeds"] = windSpeeds
+    	windDict[stationName]["gusts"] = windGusts
+    except (HTTPError, FileNotFoundError):
     	print("oops bad url")
     	badStations.append(badStations.append(stationDict))
     	
+print(windDict)
+with open(NOS_WIND_FILE_NAME, "w") as outfile:
+    json.dump(windDict, outfile, cls=NumpyEncoder)
     	
 #     print(type(data.get("Wind_Speed")))
 #     print(type(data.get("Wind_Direction")))

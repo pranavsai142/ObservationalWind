@@ -33,6 +33,7 @@ for key in stationsDict["NOS"].keys():
     url = 'https://opendap.co-ops.nos.noaa.gov/erddap/tabledap/IOOS_Wind.mat?STATION_ID%2Ctime%2CWind_Speed%2CWind_Direction%2CWind_Gust&STATION_ID%3E=%22' + stationId + '%22&BEGIN_DATE%3E=%22' + startDate + '%22&END_DATE%3E=%22' + endDate + '%22&time%3E=' + dateStartFormat + 'T00%3A00%3A00Z'
     matFilename = stationDict["id"] + ".mat"
     try:
+#     Once mat files are downloaded once, comment out this line to stop querying the API
 #     	urlretrieve(url, matFilename)
     	data = scipy.io.loadmat(matFilename)
     	unixTimes = data["IOOS_Wind"]["time"]

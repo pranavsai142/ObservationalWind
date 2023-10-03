@@ -25,12 +25,6 @@ coldStartDateText = coldStartDateText[0: 8] + "T" + coldStartDateText[8:]
 coldStartDate = datetime.fromisoformat(coldStartDateText)
 print("coldStartDate", coldStartDate)
 
-# Grid origin is top right
-minX = windDataset.variables["x"][0].data
-maxX = windDataset.variables["x"][-1].data
-minY = windDataset.variables["y"][0].data
-maxY = windDataset.variables["y"][-1].data
-
 minT = windDataset.variables["time"][0].data
 maxT = windDataset.variables["time"][-1].data
 
@@ -44,11 +38,15 @@ endDate = coldStartDate + timedelta(seconds=int(maxT))
 print("startDate", startDate)
 print("endDate", endDate)
 
-print("minX", minX)
-print("minY", minY)
-print("maxX", maxX)
-print("maxY", maxY)
+# Grid origin is top right? Maybe not, Node based system!
+node0 = (float(windDataset.variables["x"][0].data), float(windDataset.variables["y"][0].data))
+print("node0", node0)
 
-print("deltaX deltaY of grid in Lat, Long")
-print(maxX - minX)
-print(maxY - minY)
+numberOfNodes = windDataset.variables["x"].shape[0]
+
+print("number of nodes", numberOfNodes)
+print("wind at top right of grid")
+windX0 = windDataset.variables["windx"][0][0]
+windY0 = windDataset.variables["windy"][0]
+print("windX0", windX0)
+print("windY0", windY0)

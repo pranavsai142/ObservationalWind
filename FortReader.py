@@ -17,7 +17,9 @@ from datetime import datetime, timedelta
 
 FORT_74_FILE_NAME = "fort.74.nc"
 NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
-NOS_STATIONS_TO_NODE_DISTANCE_FILE_NAME = "NOS_StationsToNodeDistance.json"
+NOS_STATION_TO_NODE_DISTANCES_FILE_NAME = "NOS_Station_To_Node_Distances.json"
+NOS_ADCIRC_NODES_FILE_NAME = "NOS_ADCIRC_Nodes.json"
+NOS_ADCIRC_WIND_DATA_FILE_NAME = "NOS_ADCIRC_Wind_Data.json"
 
 windDataset = nc.Dataset(FORT_74_FILE_NAME)
 windMetadata = windDataset.__dict__
@@ -36,6 +38,10 @@ maxT = windDataset.variables["time"][-1].data
 print("deltaT of data")
 windDeltaT = timedelta(seconds=maxT - minT)
 print(windDeltaT)
+
+print("number of timesteps")
+timesteps = len(windDataset.variables["time"][:])
+print(timesteps)
 
 print("start of wind data (seconds since coldstart)")
 startDate = coldStartDate + timedelta(seconds=int(minT))
@@ -64,37 +70,80 @@ print("windY0", windY0)
 with open(NOS_STATIONS_FILE_NAME) as stations_file:
     stationsDict = json.load(stations_file)
     
-# Initialize stationToNodeDistanceDict
-stationToNodeDistanceDict = {}
-for stationKey in stationsDict["NOS"].keys():
-    stationToNodeDistanceDict[stationKey] = {}
+stationToNodeDistancesDict = {}
 
-# Nodes with ..interesting.. latitude and longitude
-badNodes = []
+# Set to true to recreate station to node distances calculations dictionary
+initializeStationToNodeDistancesDict = False
+if(initializeStationToNodeDistancesDict):
+    for stationKey in stationsDict["NOS"].keys():
+        stationToNodeDistancesDict[stationKey] = {}
 
-for nodeIndex in range(numberOfNodes):
-    node = (float(windDataset.variables["y"][nodeIndex].data), float(windDataset.variables["x"][nodeIndex].data))
-    if(node[0] <= 90 and node[0] >= -90 and node[1] <= 90 and node[1] >= -90):
-        for stationKey in stationsDict["NOS"].keys():
-            stationDict = stationsDict["NOS"][stationKey]
-            stationCoordinates = (float(stationDict["latitude"]), float(stationDict["longitude"]))
-            distance = haversine.haversine(stationCoordinates, node)
-            if(len(stationToNodeDistanceDict[stationKey].keys()) == 0):
-                stationToNodeDistanceDict[stationKey]["nodeIndex"] = nodeIndex
-                stationToNodeDistanceDict[stationKey]["distance"] = distance
-            elif(stationToNodeDistanceDict[stationKey]["distance"] > distance):
-                stationToNodeDistanceDict[stationKey]["nodeIndex"] = nodeIndex
-                stationToNodeDistanceDict[stationKey]["distance"] = distance
-    else:
-        badNodes.append(nodeIndex)
-        print("bad node", nodeIndex, node)
+    # Nodes with ..interesting.. latitude and longitude
+    badNodes = []
+
+    for nodeIndex in range(numberOfNodes):
+        node = (float(windDataset.variables["y"][nodeIndex].data), float(windDataset.variables["x"][nodeIndex].data))
+        if(node[0] <= 90 and node[0] >= -90 and node[1] <= 90 and node[1] >= -90):
+            for stationKey in stationsDict["NOS"].keys():
+                stationDict = stationsDict["NOS"][stationKey]
+                stationCoordinates = (float(stationDict["latitude"]), float(stationDict["longitude"]))
+                distance = haversine.haversine(stationCoordinates, node)
+                if(len(stationToNodeDistancesDict[stationKey].keys()) == 0):
+                    stationToNodeDistancesDict[stationKey]["nodeIndex"] = nodeIndex
+                    stationToNodeDistancesDict[stationKey]["distance"] = distance
+                elif(stationToNodeDistancesDict[stationKey]["distance"] > distance):
+                    stationToNodeDistancesDict[stationKey]["nodeIndex"] = nodeIndex
+                    stationToNodeDistancesDict[stationKey]["distance"] = distance
+        else:
+            badNodes.append(nodeIndex)
+            print("bad node", nodeIndex, node)
     
-#     Print progress
-    if(nodeIndex % 50000 == 0):
-        print("on node", nodeIndex, node)
+    #     Print progress
+        if(nodeIndex % 50000 == 0):
+            print("on node", nodeIndex, node)
         
-print("stationToNodeDistanceDict", stationToNodeDistanceDict)
+    print("stationToNodeDistancesDict", stationToNodeDistancesDict)
 
-with open(NOS_STATIONS_TO_NODE_DISTANCE_FILE_NAME, "w") as outfile:
-    json.dump(stationToNodeDistanceDict, outfile)
+    with open(NOS_STATION_TO_NODE_DISTANCES_FILE_NAME, "w") as outfile:
+        json.dump(stationToNodeDistancesDict, outfile)
+
+with open(NOS_STATION_TO_NODE_DISTANCES_FILE_NAME) as outfile:
+    stationToNodeDistancesDict = json.load(outfile)
+  
+adcircNodes = {"NOS": {}}
     
+initializeAdcircNodesDict = False
+if(initializeAdcircNodesDict):
+    for stationKey in stationToNodeDistancesDict.keys():
+        stationToNodeDistanceDict = stationToNodeDistancesDict[stationKey]
+        nodeIndex = stationToNodeDistanceDict["nodeIndex"]
+        adcircNodes["NOS"][nodeIndex] = {}
+        adcircNodes["NOS"][nodeIndex]["latitude"] = float(windDataset.variables["y"][nodeIndex].data)
+        adcircNodes["NOS"][nodeIndex]["longitude"] = float(windDataset.variables["x"][nodeIndex].data)
+        adcircNodes["NOS"][nodeIndex]["stationKey"] = stationKey
+    
+    with open(NOS_ADCIRC_NODES_FILE_NAME, "w") as outfile:
+        json.dump(adcircNodes, outfile)
+
+with open(NOS_ADCIRC_NODES_FILE_NAME) as outfile:
+    adcircNodes = json.load(outfile)
+
+adcircWindData = {}
+for nodeIndex in adcircNodes["NOS"].keys():
+    adcircWindData[nodeIndex] = {}
+    adcircWindData[nodeIndex]["latitude"] = float(windDataset.variables["y"][int(nodeIndex)].data)
+    adcircWindData[nodeIndex]["longitude"] = float(windDataset.variables["x"][int(nodeIndex)].data)
+    adcircWindData[nodeIndex]["stationKey"] = adcircNodes["NOS"][nodeIndex]["stationKey"]
+    windsX = []
+    windsY = []
+    for index in range(timesteps):
+        windsX.append(windDataset.variables["windx"][index][int(nodeIndex)])
+        windsY.append(windDataset.variables["windy"][index][int(nodeIndex)])
+    adcircWindData[nodeIndex]["windsX"] = windsX
+    adcircWindData[nodeIndex]["windsY"] = windsY
+    
+with open(NOS_ADCIRC_WIND_DATA_FILE_NAME, "w") as outfile:
+    json.dump(adcircWindData, outfile)
+
+    
+  

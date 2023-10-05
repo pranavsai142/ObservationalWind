@@ -40,11 +40,11 @@ for key in stationsDict["NOS"].keys():
     	windDirections = data["IOOS_Wind"]["Wind_Direction"]
     	windSpeeds = data["IOOS_Wind"]["Wind_Speed"]
     	windGusts = data["IOOS_Wind"]["Wind_Gust"]
-    	windDict[stationName] = {}
-    	windDict[stationName]["times"] = unixTimes
-    	windDict[stationName]["directions"] = windDirections
-    	windDict[stationName]["speeds"] = windSpeeds
-    	windDict[stationName]["gusts"] = windGusts
+    	windDict[key] = {}
+    	windDict[key]["times"] = unixTimes
+    	windDict[key]["directions"] = windDirections
+    	windDict[key]["speeds"] = windSpeeds
+    	windDict[key]["gusts"] = windGusts
     except (HTTPError, FileNotFoundError):
     	print("oops bad url")
     	badStations.append(badStations.append(stationDict))

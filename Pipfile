@@ -8,6 +8,7 @@ scipy = "*"
 numpy = "*"
 netcdf4 = "*"
 haversine = "*"
+matplotlib = "*"
 
 [dev-packages]
 

@@ -3,3 +3,4 @@ Pipfile.lock
 *.mat
 *.json
 *.nc
+.DS_Store

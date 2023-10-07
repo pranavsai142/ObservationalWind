@@ -20,7 +20,7 @@ with open(NOS_STATIONS_FILE_NAME) as stations_file:
 stationIds = [8413320, 8447435, 8449130, 8452660, 8418150, 8454049, 8454000, 8411060, 8531680, 8452944]
 stationNames = ['Bar Harbor', 'Chatham', 'Nantucket', 'Newport', 'Portland', 'Quonset Point', 'Providence', 'Cutler Faris Wharf', 'Sandy Hook', 'Conimicut Light'] 
 
-startDate = "20230912"
+startDate = "20230914"
 endDate = "20230919"
 dateStartFormat = "2023-09-12"
     
@@ -34,7 +34,7 @@ for key in stationsDict["NOS"].keys():
     matFilename = stationDict["id"] + ".mat"
     try:
 #     Once mat files are downloaded once, comment out this line to stop querying the API
-#     	urlretrieve(url, matFilename)
+    	urlretrieve(url, matFilename)
     	data = scipy.io.loadmat(matFilename)
     	unixTimes = data["IOOS_Wind"]["time"][0][0].flatten()
     	windDirections = data["IOOS_Wind"]["Wind_Direction"][0][0].flatten()

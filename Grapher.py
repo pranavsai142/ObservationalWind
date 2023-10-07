@@ -30,7 +30,7 @@ adcircStationsLongitudes = []
 nosLatitudes = []
 nosLongitudes = []
 stationLabels = []
-nodeLabels = []
+stationNodeLabels = []
 adcircStationsTimes = []
 adcircStationsWindDirections = []
 adcircStationsWindSpeeds = []
@@ -40,7 +40,7 @@ nosWindSpeeds = []
 for nodeIndex in adcircStationsWindData.keys():
     stationKey = adcircStationsWindData[nodeIndex]["stationKey"]
     if(stationKey in windData.keys()):
-        nodeLabels.append(nodeIndex)
+        stationNodeLabels.append(nodeIndex)
         adcircStationsLatitudes.append(adcircStationsWindData[nodeIndex]["latitude"])
         adcircStationsLongitudes.append(adcircStationsWindData[nodeIndex]["longitude"])
         adcircStationWindsX = adcircStationsWindData[nodeIndex]["windsX"]
@@ -53,7 +53,8 @@ for nodeIndex in adcircStationsWindData.keys():
             adcircWindX = adcircStationsWindData[nodeIndex]["windsX"][index]
             adcircWindY = adcircStationsWindData[nodeIndex]["windsY"][index]
             adcircWindSpeed = math.sqrt(adcircWindX**2 + adcircWindY**2)
-            adcircWindDirection = math.degrees(math.atan(adcircWindY / adcircWindX))
+            adcircWindDirection = math.degrees(math.acos(adcircWindX / adcircWindSpeed))
+            adcircWindDirection = (270 - math.atan(adcircWindY / adcircWindX) * 180/math.pi) % 360
             adcircStationWindDirections.append(adcircWindDirection)
             adcircStationWindSpeeds.append(adcircWindSpeed)
         
@@ -106,8 +107,11 @@ ax.scatter(nosLongitudes + adcircStationsLongitudes, nosLatitudes + adcircStatio
 
 for index, stationLabel in enumerate(stationLabels):
     ax.annotate(stationLabel, (nosLongitudes[index], nosLatitudes[index]))
-
-# plt.show()
+    ax.annotate(stationNodeLabels[index], (adcircStationsLongitudes[index], adcircStationsLatitudes[index]))
+    
+plt.title("nos station points and closest nodes in rivc1 mesh plotted")
+plt.xlabel("longitude")
+plt.ylabel("latitude")
 
 # Plot collection of points off adcirc mesh
 fig, ax = plt.subplots()
@@ -115,12 +119,27 @@ ax.scatter(adcircNodesLongitudes, adcircNodesLatitudes)
 
 for index, nodeLabel in enumerate(adcircNodeLabels):
     ax.annotate(nodeLabel, (adcircNodesLongitudes[index], adcircNodesLatitudes[index]))
-
-# plt.show()
+plt.title("adcirc assorted nodes in rivc1 mesh plotted")
+plt.xlabel("longitude")
+plt.ylabel("latitude")
 
 # Plot wind speed over time for station 0
-fig, ax = plt.subplots()
-ax.scatter(adcircStationsTimes[12], adcircStationsWindSpeeds[12])
-ax.scatter(nosTimes[12], nosWindSpeeds[12], marker=".")
+if(len(adcircStationsTimes) == len(adcircStationsWindSpeeds) == len(nosTimes) == len(nosWindSpeeds)):
+    for index in range(len(adcircStationsTimes)):
+        fig, ax = plt.subplots()
+        ax.scatter(adcircStationsTimes[index], adcircStationsWindSpeeds[index], marker=".")
+        ax.scatter(nosTimes[index], nosWindSpeeds[index], marker=".")
+        plt.title(stationLabels[index] + " station observational vs ADCIRC Wind Speed")
+        plt.xlabel("time")
+        plt.ylabel("wind speed (kts)")
+        
+if(len(adcircStationsTimes) == len(adcircStationsWindSpeeds) == len(nosTimes) == len(nosWindSpeeds)):
+    for index in range(len(adcircStationsTimes)):
+        fig, ax = plt.subplots()
+        ax.scatter(adcircStationsTimes[index], adcircStationsWindDirections[index], marker=".")
+        ax.scatter(nosTimes[index], nosWindDirections[index], marker=".")
+        plt.title(stationLabels[index] + " station observational vs ADCIRC Wind Direction")
+        plt.xlabel("time")
+        plt.ylabel("wind direction (compass)")
 
 plt.show()

@@ -17,8 +17,8 @@ for line in file:
     	stationsDict["NOS"][data[0]]["longitude"] = data[9]
     	stationsDict["NOS"][data[0]]["altitude"] = data[10]
 
-for station in stationsDict["NOS"].keys():
-	print(station)
+# for station in stationsDict["NOS"].keys():
+# 	print(station)
 	
 with open(NOS_STATIONS_FILE_NAME, "w") as outfile:
     json.dump(stationsDict, outfile)

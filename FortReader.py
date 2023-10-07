@@ -20,6 +20,7 @@ NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
 NOS_STATION_TO_NODE_DISTANCES_FILE_NAME = "NOS_Station_To_Node_Distances.json"
 NOS_ADCIRC_NODES_FILE_NAME = "NOS_ADCIRC_Nodes.json"
 NOS_ADCIRC_WIND_DATA_FILE_NAME = "NOS_ADCIRC_Wind_Data.json"
+NOS_ADCIRC_NODES_WIND_DATA_FILE_NAME = "NOS_ADCIRC_Nodes_Wind_Data.json"
 
 windDataset = nc.Dataset(FORT_74_FILE_NAME)
 windMetadata = windDataset.__dict__
@@ -43,9 +44,14 @@ print("number of timesteps")
 timesteps = len(windDataset.variables["time"][:])
 print(timesteps)
 
+times = []
+for index in range(timesteps):
+    time = coldStartDate + timedelta(seconds=float(windDataset.variables["time"][index].data))
+    times.append(time.timestamp())
+
 print("start of wind data (seconds since coldstart)")
-startDate = coldStartDate + timedelta(seconds=int(minT))
-endDate = coldStartDate + timedelta(seconds=int(maxT))
+startDate = coldStartDate + timedelta(seconds=float(minT))
+endDate = coldStartDate + timedelta(seconds=float(maxT))
 print("startDate", startDate)
 print("endDate", endDate)
 
@@ -78,12 +84,12 @@ if(initializeStationToNodeDistancesDict):
     for stationKey in stationsDict["NOS"].keys():
         stationToNodeDistancesDict[stationKey] = {}
 
-    # Nodes with ..interesting.. latitude and longitude
-    badNodes = []
-
     for nodeIndex in range(numberOfNodes):
+#     There are nodes in the gulf of mexico between node 400000 - 500000 for rivc1 map
+#     for nodeIndex in range(100000):
+#         nodeIndex = nodeIndex + 400000
         node = (float(windDataset.variables["y"][nodeIndex].data), float(windDataset.variables["x"][nodeIndex].data))
-        if(node[0] <= 90 and node[0] >= -90 and node[1] <= 90 and node[1] >= -90):
+        if(node[0] <= 90 and node[0] >= -90):
             for stationKey in stationsDict["NOS"].keys():
                 stationDict = stationsDict["NOS"][stationKey]
                 stationCoordinates = (float(stationDict["latitude"]), float(stationDict["longitude"]))
@@ -128,22 +134,45 @@ if(initializeAdcircNodesDict):
 with open(NOS_ADCIRC_NODES_FILE_NAME) as outfile:
     adcircNodes = json.load(outfile)
 
-adcircWindData = {}
-for nodeIndex in adcircNodes["NOS"].keys():
-    adcircWindData[nodeIndex] = {}
-    adcircWindData[nodeIndex]["latitude"] = float(windDataset.variables["y"][int(nodeIndex)].data)
-    adcircWindData[nodeIndex]["longitude"] = float(windDataset.variables["x"][int(nodeIndex)].data)
-    adcircWindData[nodeIndex]["stationKey"] = adcircNodes["NOS"][nodeIndex]["stationKey"]
-    windsX = []
-    windsY = []
-    for index in range(timesteps):
-        windsX.append(windDataset.variables["windx"][index][int(nodeIndex)])
-        windsY.append(windDataset.variables["windy"][index][int(nodeIndex)])
-    adcircWindData[nodeIndex]["windsX"] = windsX
-    adcircWindData[nodeIndex]["windsY"] = windsY
+initializeAdcircWindDataDict = True
+if(initializeAdcircWindDataDict):
+    adcircWindData = {}
+    for nodeIndex in adcircNodes["NOS"].keys():
+        adcircWindData[nodeIndex] = {}
+        adcircWindData[nodeIndex]["latitude"] = float(windDataset.variables["y"][int(nodeIndex)].data)
+        adcircWindData[nodeIndex]["longitude"] = float(windDataset.variables["x"][int(nodeIndex)].data)
+        adcircWindData[nodeIndex]["stationKey"] = adcircNodes["NOS"][nodeIndex]["stationKey"]
+        adcircWindData[nodeIndex]["times"] = times
+        windsX = []
+        windsY = []
+        for index in range(timesteps):
+            windsX.append(windDataset.variables["windx"][index][int(nodeIndex)])
+            windsY.append(windDataset.variables["windy"][index][int(nodeIndex)])
+        adcircWindData[nodeIndex]["windsX"] = windsX
+        adcircWindData[nodeIndex]["windsY"] = windsY
     
-with open(NOS_ADCIRC_WIND_DATA_FILE_NAME, "w") as outfile:
-    json.dump(adcircWindData, outfile)
+    with open(NOS_ADCIRC_WIND_DATA_FILE_NAME, "w") as outfile:
+        json.dump(adcircWindData, outfile)
+    
+initializeAdcircNodesWindDataDict = True
+if(initializeAdcircNodesWindDataDict):
+    adcircNodesWindData = {}
+    for nodeIndex in range(numberOfNodes):
+        if(nodeIndex % 50000 == 0):
+            adcircNodesWindData[nodeIndex] = {}
+            adcircNodesWindData[nodeIndex]["latitude"] = float(windDataset.variables["y"][int(nodeIndex)].data)
+            adcircNodesWindData[nodeIndex]["longitude"] = float(windDataset.variables["x"][int(nodeIndex)].data)
+            adcircNodesWindData[nodeIndex]["times"] = times
+            windsX = []
+            windsY = []
+            for index in range(timesteps):
+                windsX.append(windDataset.variables["windx"][index][int(nodeIndex)])
+                windsY.append(windDataset.variables["windy"][index][int(nodeIndex)])
+            adcircNodesWindData[nodeIndex]["windsX"] = windsX
+            adcircNodesWindData[nodeIndex]["windsY"] = windsY
+    
+with open(NOS_ADCIRC_NODES_WIND_DATA_FILE_NAME, "w") as outfile:
+    json.dump(adcircNodesWindData, outfile)
 
     
   

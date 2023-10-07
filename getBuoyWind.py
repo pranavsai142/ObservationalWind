@@ -36,20 +36,20 @@ for key in stationsDict["NOS"].keys():
 #     Once mat files are downloaded once, comment out this line to stop querying the API
 #     	urlretrieve(url, matFilename)
     	data = scipy.io.loadmat(matFilename)
-    	unixTimes = data["IOOS_Wind"]["time"]
-    	windDirections = data["IOOS_Wind"]["Wind_Direction"]
-    	windSpeeds = data["IOOS_Wind"]["Wind_Speed"]
-    	windGusts = data["IOOS_Wind"]["Wind_Gust"]
+    	unixTimes = data["IOOS_Wind"]["time"][0][0].flatten()
+    	windDirections = data["IOOS_Wind"]["Wind_Direction"][0][0].flatten()
+    	windSpeeds = data["IOOS_Wind"]["Wind_Speed"][0][0].flatten()
+    	windGusts = data["IOOS_Wind"]["Wind_Gust"][0][0].flatten()
     	windDict[key] = {}
     	windDict[key]["times"] = unixTimes
     	windDict[key]["directions"] = windDirections
     	windDict[key]["speeds"] = windSpeeds
     	windDict[key]["gusts"] = windGusts
     except (HTTPError, FileNotFoundError):
-    	print("oops bad url")
+#     	print("oops bad url")
     	badStations.append(badStations.append(stationDict))
     	
-print(windDict)
+# print(windDict)
 with open(NOS_WIND_FILE_NAME, "w") as outfile:
     json.dump(windDict, outfile, cls=NumpyEncoder)
     	

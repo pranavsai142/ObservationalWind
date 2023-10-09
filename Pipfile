@@ -9,6 +9,7 @@ numpy = "*"
 netcdf4 = "*"
 haversine = "*"
 matplotlib = "*"
+metget = "*"
 
 [dev-packages]
 

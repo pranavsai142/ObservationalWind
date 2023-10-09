@@ -171,8 +171,8 @@ if(initializeAdcircNodesWindDataDict):
             adcircNodesWindData[nodeIndex]["windsX"] = windsX
             adcircNodesWindData[nodeIndex]["windsY"] = windsY
     
-with open(NOS_ADCIRC_NODES_WIND_DATA_FILE_NAME, "w") as outfile:
-    json.dump(adcircNodesWindData, outfile)
+    with open(NOS_ADCIRC_NODES_WIND_DATA_FILE_NAME, "w") as outfile:
+        json.dump(adcircNodesWindData, outfile)
 
     
   

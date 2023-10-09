@@ -4,3 +4,4 @@ Pipfile.lock
 *.json
 *.nc
 .DS_Store
+*.png

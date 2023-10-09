@@ -1,0 +1,2 @@
+export METGET_API_KEY=oV2FM31B1s7LK31ghZUnh9tnOx5uybJt2VSmyDVo
+export METGET_ENDPOINT=https://api.metget.zachcobell.com

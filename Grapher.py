@@ -2,6 +2,7 @@ import json
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 NOS_ADCIRC_WIND_DATA_FILE_NAME = "NOS_ADCIRC_Wind_Data.json"
 NOS_GFS_WIND_DATA_FILE_NAME = "NOS_GFS_Wind_Data.json"
@@ -11,8 +12,22 @@ NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
 
 def extractLatitudeIndex(nodeIndex):
     return int(nodeIndex[1: nodeIndex.find(",")])
+    
 def extractLongitudeIndex(nodeIndex):
     return int(nodeIndex[nodeIndex.find(",") + 1: nodeIndex.find(")")])
+    
+def vectorSpeed(x,y):
+    return math.sqrt(x**2 + y**2)
+    
+def vectorDirection(x,y):
+    degrees = math.degrees(math.atan2(y,x))
+    if(degrees < 0):
+        return degrees + 360
+    return degrees
+    
+def datetimeToString(timestamp):
+    return timestamp.strftime("%y%m%d-%H:%M")
+
 
 adcircStationsWindData = {}
 gfsStationsWindData = {}
@@ -59,12 +74,12 @@ for nodeIndex in adcircStationsWindData.keys():
         adcircStationWindDirections = []
         adcircStationWindSpeeds = []
         for index in range(len(adcircStationsWindData[nodeIndex]["times"])):
+#           adcircStationTimes.append(datetimeToString(datetime.fromtimestamp(adcircStationsWindData[nodeIndex]["times"][index])))
             adcircStationTimes.append(adcircStationsWindData[nodeIndex]["times"][index])
             adcircWindX = adcircStationsWindData[nodeIndex]["windsX"][index]
             adcircWindY = adcircStationsWindData[nodeIndex]["windsY"][index]
-            adcircWindSpeed = math.sqrt(adcircWindX**2 + adcircWindY**2)
-            adcircWindDirection = math.degrees(math.acos(adcircWindX / adcircWindSpeed))
-            adcircWindDirection = (270 - math.atan(adcircWindY / adcircWindX) * 180/math.pi) % 360
+            adcircWindSpeed = vectorSpeed(adcircWindX, adcircWindY)
+            adcircWindDirection = vectorDirection(adcircWindX, adcircWindY)
             adcircStationWindDirections.append(adcircWindDirection)
             adcircStationWindSpeeds.append(adcircWindSpeed)
         
@@ -74,8 +89,10 @@ for nodeIndex in adcircStationsWindData.keys():
         stationLabels.append(stationsData[stationKey]["name"])
         nosLatitudes.append(float(stationsData[stationKey]["latitude"]))
         nosLongitudes.append(float(stationsData[stationKey]["longitude"]))
-        print(windData[stationKey]["times"])
-        nosTimes.append(windData[stationKey]["times"])
+        nosStationTimes = []
+        for timestamp in windData[stationKey]["times"]:
+            nosStationTimes.append(timestamp)
+        nosTimes.append(nosStationTimes)
         nosWindDirections.append(windData[stationKey]["directions"])
         nosWindSpeeds.append(windData[stationKey]["speeds"])
 
@@ -100,9 +117,8 @@ for nodeIndex in gfsStationsWindData.keys():
             gfsStationTimes.append(gfsStationsWindData[nodeIndex]["times"][index])
             gfsWindX = gfsStationsWindData[nodeIndex]["windsX"][index]
             gfsWindY = gfsStationsWindData[nodeIndex]["windsY"][index]
-            gfsWindSpeed = math.sqrt(gfsWindX**2 + gfsWindY**2)
-            gfsWindDirection = math.degrees(math.acos(gfsWindX / gfsWindSpeed))
-            gfsWindDirection = (270 - math.atan(gfsWindY / gfsWindX) * 180/math.pi) % 360
+            gfsWindSpeed = vectorSpeed(gfsWindX, gfsWindY)
+            gfsWindDirection = vectorDirection(gfsWindX, gfsWindY)
             gfsStationWindDirections.append(gfsWindDirection)
             gfsStationWindSpeeds.append(gfsWindSpeed)
         
@@ -149,9 +165,10 @@ for nodeIndex in adcircNodesWindData.keys():
 # Plot lat long points of nodes and stations in wind data
 
 fig, ax = plt.subplots()
-ax.scatter(nosLongitudes, nosLatitudes)
-ax.scatter(adcircStationsLongitudes, adcircStationsLatitudes)
-ax.scatter(gfsStationsLongitudes, gfsStationsLatitudes)
+ax.scatter(adcircStationsLongitudes, adcircStationsLatitudes, label="ADCIRC")
+ax.scatter(gfsStationsLongitudes, gfsStationsLatitudes, label="GFS")
+ax.scatter(nosLongitudes, nosLatitudes, label="Buoy")
+ax.legend(loc="lower right")
 
 for index, stationLabel in enumerate(stationLabels):
     ax.annotate(stationLabel, (nosLongitudes[index], nosLatitudes[index]))
@@ -175,20 +192,22 @@ plt.ylabel("latitude")
 # Plot wind speed over time
 for index in range(len(adcircStationsTimes)):
     fig, ax = plt.subplots()
-    ax.scatter(adcircStationsTimes[index], adcircStationsWindSpeeds[index], marker=".")
-    ax.scatter(gfsStationsTimes[index], gfsStationsWindSpeeds[index], marker=".")
-    ax.scatter(nosTimes[index], nosWindSpeeds[index], marker=".")
-    plt.title(stationLabels[index] + " station observational vs ADCIRC Wind Speed")
+    ax.scatter(adcircStationsTimes[index], adcircStationsWindSpeeds[index], marker=".", label="ADCIRC")
+    ax.scatter(gfsStationsTimes[index], gfsStationsWindSpeeds[index], marker=".", label="GFS")
+    ax.scatter(nosTimes[index], nosWindSpeeds[index], marker=".", label="Buoy")
+    ax.legend(loc="lower right")
+    plt.title(stationLabels[index] + " station observational vs ADCIRC wind speed")
     plt.xlabel("time")
-    plt.ylabel("wind speed (kts)")
+    plt.ylabel("wind speed (m/s)")
         
 # Plot wind direction over time
 for index in range(len(adcircStationsTimes)):
     fig, ax = plt.subplots()
-    ax.scatter(adcircStationsTimes[index], adcircStationsWindDirections[index], marker=".")
-    ax.scatter(gfsStationsTimes[index], gfsStationsWindDirections[index], marker=".")
-    ax.scatter(nosTimes[index], nosWindDirections[index], marker=".")
-    plt.title(stationLabels[index] + " station observational vs ADCIRC Wind Direction")
+    ax.scatter(adcircStationsTimes[index], adcircStationsWindDirections[index], marker=".", label="ADCIRC")
+    ax.scatter(gfsStationsTimes[index], gfsStationsWindDirections[index], marker=".", label="GFS")
+    ax.scatter(nosTimes[index], nosWindDirections[index], marker=".", label="Buoy")
+    ax.legend(loc="lower right")
+    plt.title(stationLabels[index] + " station observational vs ADCIRC wind direction")
     plt.xlabel("time")
     plt.ylabel("wind direction (compass)")
 

@@ -5,3 +5,4 @@ Pipfile.lock
 *.nc
 .DS_Store
 *.png
+*.csv

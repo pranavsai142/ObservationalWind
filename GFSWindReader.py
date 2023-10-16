@@ -4,10 +4,12 @@ import netCDF4 as nc
 from datetime import datetime, timedelta
 
 METGET_GFS_WIND_FILE_NAME = "adcirc_gfs_analysis_wind_pressure_2023091413-2023091906.nc"
+METGET_GFS_RAIN_FILE_NAME = "adcirc_gfs_analysis_rain_2023091413-2023091906.nc"
 NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
 NOS_STATION_TO_GFS_NODE_DISTANCES_FILE_NAME = "NOS_Station_To_GFS_Node_Distances.json"
 NOS_GFS_NODES_FILE_NAME = "NOS_GFS_Nodes.json"
 NOS_GFS_WIND_DATA_FILE_NAME = "NOS_GFS_Wind_Data.json"
+NOS_GFS_RAIN_DATA_FILE_NAME = "NOS_GFS_Rain_Data.json"
 NOS_GFS_NODES_WIND_DATA_FILE_NAME = "NOS_GFS_Nodes_Wind_Data.json"
 
 def extractLatitudeIndex(nodeIndex):
@@ -17,8 +19,13 @@ def extractLongitudeIndex(nodeIndex):
     
 windDataset = nc.Dataset(METGET_GFS_WIND_FILE_NAME)
 windMetadata = windDataset.__dict__
-# print(windMetadata)
+print(windMetadata)
 print(windDataset.variables)
+
+rainDataset = nc.Dataset(METGET_GFS_RAIN_FILE_NAME)
+rainMetadata = rainDataset.__dict__
+print(rainMetadata)
+print(rainDataset.variables)
 
 coldStartDateText = METGET_GFS_WIND_FILE_NAME[34: 42] + "T" + METGET_GFS_WIND_FILE_NAME[42:44]
 coldStartDate = datetime.fromisoformat(coldStartDateText)
@@ -117,7 +124,7 @@ with open(NOS_STATION_TO_GFS_NODE_DISTANCES_FILE_NAME) as outfile:
   
 gfsNodes = {"NOS": {}}
     
-initializeGFSNodesDict = True
+initializeGFSNodesDict = False
 if(initializeGFSNodesDict):
     for stationKey in stationToNodeDistancesDict.keys():
         stationToNodeDistanceDict = stationToNodeDistancesDict[stationKey]
@@ -133,7 +140,7 @@ if(initializeGFSNodesDict):
 with open(NOS_GFS_NODES_FILE_NAME) as outfile:
     gfsNodes = json.load(outfile)
 
-initializeGFSWindDataDict = True
+initializeGFSWindDataDict = False
 if(initializeGFSWindDataDict):
     gfsWindData = {}
     for nodeIndex in gfsNodes["NOS"].keys():
@@ -152,6 +159,23 @@ if(initializeGFSWindDataDict):
     
     with open(NOS_GFS_WIND_DATA_FILE_NAME, "w") as outfile:
         json.dump(gfsWindData, outfile)
+        
+initializeGFSRainDataDict = True
+if(initializeGFSRainDataDict):
+    gfsRainData = {}
+    for nodeIndex in gfsNodes["NOS"].keys():
+        gfsRainData[nodeIndex] = {}
+        gfsRainData[nodeIndex]["latitude"] = float(rainDataset.variables["lat"][extractLatitudeIndex(nodeIndex)].data)
+        gfsRainData[nodeIndex]["longitude"] = float(rainDataset.variables["lon"][extractLongitudeIndex(nodeIndex)].data)
+        gfsRainData[nodeIndex]["stationKey"] = gfsNodes["NOS"][nodeIndex]["stationKey"]
+        gfsRainData[nodeIndex]["times"] = times
+        rains = []
+        for index in range(timesteps):
+            rains.append(float(rainDataset.variables["rain"][index][extractLongitudeIndex(nodeIndex)][extractLatitudeIndex(nodeIndex)]))
+        gfsRainData[nodeIndex]["rains"] = rains
+    
+    with open(NOS_GFS_RAIN_DATA_FILE_NAME, "w") as outfile:
+        json.dump(gfsRainData, outfile)
     
 initializeGFSNodesWindDataDict = False
 if(initializeGFSNodesWindDataDict):

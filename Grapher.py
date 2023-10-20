@@ -10,6 +10,9 @@ NOS_GFS_RAIN_DATA_FILE_NAME = "NOS_GFS_Rain_Data.json"
 NOS_ADCIRC_NODES_WIND_DATA_FILE_NAME = "NOS_ADCIRC_Nodes_Wind_Data.json"
 NOS_WIND_FILE_NAME = "NOS_Wind.json"
 NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
+# START_DATE = datetime(year=2023, month=9, day=14)
+START_DATE = datetime(year=2022, month=12, day=14)
+DATE_FORMAT = "%m/%d/%y-%HZ"
 
 def extractLatitudeIndex(nodeIndex):
     return int(nodeIndex[1: nodeIndex.find(",")])
@@ -26,12 +29,15 @@ def vectorDirection(x,y):
         return degrees + 360
     return degrees
     
-def datetimeToString(timestamp):
-    return timestamp.strftime("%y%m%d-%H:%M")
+def unixTimeToDeltaHours(timestamp):
+    START_DATE = datetime(year=2023, month=9, day=14)
+    delta = datetime.fromtimestamp(timestamp) - START_DATE
+    return delta.total_seconds()/3600
     
 def extrapolateWindToTenMeterHeight(windVelocity, altitude):
-    WIND_PROFILE_EXPONENT = 0.11
-    return windVelocity * ((10.0/altitude)**WIND_PROFILE_EXPONENT)
+    return windVelocity
+#     WIND_PROFILE_EXPONENT = 0.11
+#     return windVelocity * ((10.0/altitude)**WIND_PROFILE_EXPONENT)
 
 
 adcircStationsWindData = {}
@@ -70,6 +76,7 @@ adcircStationsWindSpeeds = []
 nosTimes = []
 nosWindDirections = []
 nosWindSpeeds = []
+nosStationsHeights = []
 for nodeIndex in adcircStationsWindData.keys():
     stationKey = adcircStationsWindData[nodeIndex]["stationKey"]
     if(stationKey in windData.keys()):
@@ -83,7 +90,7 @@ for nodeIndex in adcircStationsWindData.keys():
         adcircStationWindSpeeds = []
         for index in range(len(adcircStationsWindData[nodeIndex]["times"])):
 #           adcircStationTimes.append(datetimeToString(datetime.fromtimestamp(adcircStationsWindData[nodeIndex]["times"][index])))
-            adcircStationTimes.append(adcircStationsWindData[nodeIndex]["times"][index])
+            adcircStationTimes.append(unixTimeToDeltaHours(adcircStationsWindData[nodeIndex]["times"][index]))
             adcircWindX = adcircStationsWindData[nodeIndex]["windsX"][index]
             adcircWindY = adcircStationsWindData[nodeIndex]["windsY"][index]
             adcircWindSpeed = vectorSpeed(adcircWindX, adcircWindY)
@@ -99,14 +106,18 @@ for nodeIndex in adcircStationsWindData.keys():
         nosLongitudes.append(float(stationsData[stationKey]["longitude"]))
         nosStationTimes = []
         nosStationWindSpeeds = []
+        nosStationHeights = []
         for index in range(len(windData[stationKey]["times"])):
-            nosStationTimes.append(windData[stationKey]["times"][index])
+            nosStationTimes.append(unixTimeToDeltaHours(windData[stationKey]["times"][index]))
             nosStationWindSpeed = windData[stationKey]["speeds"][index]
-            nosStationAltitude = windData[stationKey]["altitudes"][index]
+            nosStationHeight = windData[stationKey]["heights"][index]
+            nosStationAltitude = None
             nosStationWindSpeeds.append(extrapolateWindToTenMeterHeight(nosStationWindSpeed, nosStationAltitude))
+            nosStationHeights.append(nosStationHeight)
         nosTimes.append(nosStationTimes)
         nosWindSpeeds.append(nosStationWindSpeeds)
         nosWindDirections.append(windData[stationKey]["directions"])
+        nosStationsHeights.append(nosStationHeights)
 
 gfsStationsLatitudes = []
 gfsStationsLongitudes = []
@@ -128,7 +139,7 @@ for nodeIndex in gfsStationsWindData.keys():
         gfsStationWindSpeeds = []
         gfsStationRains = []
         for index in range(len(gfsStationsWindData[nodeIndex]["times"])):
-            gfsStationTimes.append(gfsStationsWindData[nodeIndex]["times"][index])
+            gfsStationTimes.append(unixTimeToDeltaHours(gfsStationsWindData[nodeIndex]["times"][index]))
             gfsWindX = gfsStationsWindData[nodeIndex]["windsX"][index]
             gfsWindY = gfsStationsWindData[nodeIndex]["windsY"][index]
             gfsWindSpeed = vectorSpeed(gfsWindX, gfsWindY)
@@ -141,6 +152,9 @@ for nodeIndex in gfsStationsWindData.keys():
         gfsStationsWindDirections.append(gfsStationWindDirections)
         gfsStationsWindSpeeds.append(gfsStationWindSpeeds)
         gfsStationsRains.append(gfsStationRains)
+
+numberOfStations = len(adcircStationTimes)
+numberOfStations = 7
 
 # Print 10th wind entry for 0th station
 print(nosTimes[0][10])
@@ -207,9 +221,9 @@ plt.xlabel("longitude")
 plt.ylabel("latitude")
 
 # Plot wind speed over time
-for index in range(len(adcircStationsTimes)):
+for index in range(numberOfStations):
     fig, ax = plt.subplots()
-    ax.scatter(adcircStationsTimes[index], adcircStationsWindSpeeds[index], marker=".", label="ADCIRC")
+#     ax.scatter(adcircStationsTimes[index], adcircStationsWindSpeeds[index], marker=".", label="ADCIRC")
     ax.scatter(gfsStationsTimes[index], gfsStationsWindSpeeds[index], marker=".", label="GFS")
     ax.scatter(nosTimes[index], nosWindSpeeds[index], marker=".", label="Buoy")
     ax.legend(loc="lower right")
@@ -218,22 +232,30 @@ for index in range(len(adcircStationsTimes)):
     plt.ylabel("wind speed (m/s)")
         
 # Plot wind direction over time
-for index in range(len(adcircStationsTimes)):
+for index in range(numberOfStations):
     fig, ax = plt.subplots()
-    ax.scatter(adcircStationsTimes[index], adcircStationsWindDirections[index], marker=".", label="ADCIRC")
+#     ax.scatter(adcircStationsTimes[index], adcircStationsWindDirections[index], marker=".", label="ADCIRC")
     ax.scatter(gfsStationsTimes[index], gfsStationsWindDirections[index], marker=".", label="GFS")
     ax.scatter(nosTimes[index], nosWindDirections[index], marker=".", label="Buoy")
     ax.legend(loc="lower right")
     plt.title(stationLabels[index] + " station observational vs ADCIRC wind direction")
-    plt.xlabel("time")
+    plt.xlabel("Hours since " + START_DATE.strftime(DATE_FORMAT))
     plt.ylabel("wind direction (compass)")
     
-for index in range(len(adcircStationsTimes)):
+for index in range(numberOfStations):
     fig, ax = plt.subplots()
     ax.scatter(gfsStationsTimes[index], gfsStationsRains[index], marker=".", label="GFS")
     ax.legend(loc="upper right")
     plt.title(stationLabels[index] + " station forecasted rain")
-    plt.xlabel("time")
+    plt.xlabel("Hours since " + START_DATE.strftime(DATE_FORMAT))
     plt.ylabel("rain accumlation over 1 hr (mm)")
 
+for index in range(numberOfStations):
+    fig, ax = plt.subplots()
+    ax.scatter(nosTimes[index], nosStationsHeights[index], marker=".", label="Buoy")
+    ax.legend(loc="upper right")
+    plt.title(stationLabels[index] + " station water level height above reference")
+    plt.xlabel("Hours since " + START_DATE.strftime(DATE_FORMAT))
+    plt.ylabel("height (meters)")
+    
 plt.show()

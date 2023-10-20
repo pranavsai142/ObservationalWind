@@ -20,12 +20,19 @@ with open(NOS_STATIONS_FILE_NAME) as stations_file:
 stationIds = [8413320, 8447435, 8449130, 8452660, 8418150, 8454049, 8454000, 8411060, 8531680, 8452944]
 stationNames = ['Bar Harbor', 'Chatham', 'Nantucket', 'Newport', 'Portland', 'Quonset Point', 'Providence', 'Cutler Faris Wharf', 'Sandy Hook', 'Conimicut Light'] 
 
-startDate = "20230914"
-endDate = "20230919"
-dateStartFormat = "2023-09-14"
+# startDate = "20230914"
+# endDate = "20230919"
+# dateStartFormat = "2023-09-14"
+# 
+# heightStartDate = "2023-09-14T00:00:00Z"
+# heightEndDate = "2023-09-19T23:59:00Z"
 
-altitudeStartDate = "2023-09-14T00:00:00Z"
-altitudeEndDate = "2023-09-19T23:59:00Z"
+startDate = "20221214"
+endDate = "20221219"
+dateStartFormat = "2022-12-14"
+
+heightStartDate = "2022-12-14T00:00:00Z"
+heightEndDate = "2022-12-19T23:59:00Z"
     
 badStations = []
 windDict = {}
@@ -34,13 +41,16 @@ for key in stationsDict["NOS"].keys():
     stationId = stationDict["id"]
     stationName = stationDict["name"]
     url = "https://opendap.co-ops.nos.noaa.gov/erddap/tabledap/IOOS_Wind.mat?STATION_ID%2Ctime%2CWind_Speed%2CWind_Direction%2CWind_Gust&STATION_ID%3E=%22" + stationId + "%22&BEGIN_DATE%3E=%22" + startDate + "%22&END_DATE%3E=%22" + endDate + "%22&time%3E=" + dateStartFormat + "T00%3A00%3A00Z"
-    altitudeURL = "https://opendap.co-ops.nos.noaa.gov/ioos-dif-sos/SOS?service=SOS&request=GetObservation&version=1.0.0&observedProperty=water_surface_height_above_reference_datum&offering=urn:ioos:station:NOAA.NOS.CO-OPS:" + stationId + "&responseFormat=text/csv&eventTime=" + altitudeStartDate + "/" + altitudeEndDate + "&unit=Meters"
+    heightURL = "https://opendap.co-ops.nos.noaa.gov/ioos-dif-sos/SOS?service=SOS&request=GetObservation&version=1.0.0&observedProperty=water_surface_height_above_reference_datum&offering=urn:ioos:station:NOAA.NOS.CO-OPS:" + stationId + "&responseFormat=text/csv&eventTime=" + heightStartDate + "/" + heightEndDate + "&unit=Meters"
+#     sensorURL = 'https://ioos-dif-sos-prod.co-ops-aws-east1.net/ioos-dif-sos/SOS?service=SOS&request=DescribeSensor&version=1.0.0&outputFormat=text/xml;subtype="sensorML/1.0.1/profiles/ioos_sos/1.0"&procedure=urn:ioos:station:NOAA.NOS.CO-OPS:8454000'
     matFilename = stationDict["id"] + ".mat"
-    altitudeFilename = stationDict["id"] + "_altitude.csv"
+    heightFilename = stationDict["id"] + "_height.csv"
+#     sensorFilename = stationDict["id"] + "_sensor"
     try:
 #     Once mat files are downloaded once, comment out this line to stop querying the API
-    	urlretrieve(url, matFilename)
-    	urlretrieve(altitudeURL, altitudeFilename)
+#     	urlretrieve(url, matFilename)
+#     	urlretrieve(heightURL, heightFilename)
+#     	urlretrieve(sensorURL, sensorFilename)
     	data = scipy.io.loadmat(matFilename)
     	unixTimes = data["IOOS_Wind"]["time"][0][0].flatten()
     	windDirections = data["IOOS_Wind"]["Wind_Direction"][0][0].flatten()
@@ -53,9 +63,9 @@ for key in stationsDict["NOS"].keys():
     	windDict[key]["gusts"] = windGusts
     	
     	
-    	file = open(altitudeFilename)
-    	csvAltitudeTimes = []
-    	csvAltitudeValues = []
+    	file = open(heightFilename)
+    	csvHeightTimes = []
+    	csvHeightValues = []
     	skipHeader = True
     	for line in file:
     		if(skipHeader):
@@ -63,30 +73,30 @@ for key in stationsDict["NOS"].keys():
     		else:
     			data = line.split(",")
 #     			print(data)
-    			altitudeFormattedTime = data[4]
-    			year = int(altitudeFormattedTime[0:4])
-    			month = int(altitudeFormattedTime[5:7])
-    			day = int(altitudeFormattedTime[8:10])
-    			hour = int(altitudeFormattedTime[11:13])
-    			minute = int(altitudeFormattedTime[14:16])
-    			second = int(altitudeFormattedTime[17:19])
+    			heightFormattedTime = data[4]
+    			year = int(heightFormattedTime[0:4])
+    			month = int(heightFormattedTime[5:7])
+    			day = int(heightFormattedTime[8:10])
+    			hour = int(heightFormattedTime[11:13])
+    			minute = int(heightFormattedTime[14:16])
+    			second = int(heightFormattedTime[17:19])
     			
-    			altitudeTime = datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
+    			heightTime = datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second)
     			
-    			altitudeValue = float(data[5])
-    			csvAltitudeTimes.append(datetime.timestamp(altitudeTime))
-    			csvAltitudeValues.append(altitudeValue)
-    	print("CSV and .mat same length? " + stationName, len(csvAltitudeTimes) == len(unixTimes))
-    	print("CSV Altitude Times vs unixTimes len", len(csvAltitudeTimes), len(unixTimes))
-    	altitudeTime = datetime.timestamp(datetime(year=3000, month=1, day=1))
-    	csvAltitudeTimes.append(altitudeTime)
-    	altitudeIndex = 0
-    	altitudeValues = []
+    			heightValue = float(data[5])
+    			csvHeightTimes.append(datetime.timestamp(heightTime))
+    			csvHeightValues.append(heightValue)
+    	print("CSV and .mat same length? " + stationName, len(csvHeightTimes) == len(unixTimes))
+    	print("CSV height Times vs unixTimes len", len(csvheightTimes), len(unixTimes))
+    	heightTime = datetime.timestamp(datetime(year=3000, month=1, day=1))
+    	csvHeightTimes.append(heightTime)
+    	heightIndex = 0
+    	heightValues = []
     	for unixTime in unixTimes:
-    		if(unixTime > csvAltitudeTimes[altitudeIndex + 1]):
-    			altitudeIndex += 1
-    		altitudeValues.append(csvAltitudeValues[altitudeIndex])
-    	windDict[key]["altitudes"] = altitudeValues
+    		if(unixTime > csvHeightTimes[heightIndex + 1]):
+    			heightIndex += 1
+    		heightValues.append(csvHeightValues[heightIndex])
+    	windDict[key]["heights"] = heightValues
     except (HTTPError, FileNotFoundError):
 #     	print("oops bad url")
     	badStations.append(badStations.append(stationDict))

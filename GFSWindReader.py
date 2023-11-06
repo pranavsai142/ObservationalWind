@@ -3,14 +3,19 @@ import haversine
 import netCDF4 as nc
 from datetime import datetime, timedelta
 
-METGET_GFS_WIND_FILE_NAME = "adcirc_gfs_analysis_wind_pressure_2023091413-2023091906.nc"
-METGET_GFS_RAIN_FILE_NAME = "adcirc_gfs_analysis_rain_2023091413-2023091906.nc"
+# METGET_GFS_WIND_FILE_NAME = "adcirc_gfs_analysis_wind_pressure_2023091413-2023091906.nc"
+# METGET_GFS_RAIN_FILE_NAME = "adcirc_gfs_analysis_rain_2023091413-2023091906.nc"
+# METGET_GFS_WIND_FILE_NAME = "gfs_dec_2022_multiple_forecasts.nc"
+# METGET_GFS_WIND_FILE_NAME = "adcirc_gfs_analysis_wind_pressure_2022122000-2022122400.nc"
+# METGET_GFS_RAIN_FILE_NAME = "adcirc_gfs_analysis_rain_2022122000-2022122400.nc"
+METGET_GFS_WIND_FILE_NAME = "adcirc_gfs_analysis_wind_pressure_2023102222-2023102921.nc"
 NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
 NOS_STATION_TO_GFS_NODE_DISTANCES_FILE_NAME = "NOS_Station_To_GFS_Node_Distances.json"
 NOS_GFS_NODES_FILE_NAME = "NOS_GFS_Nodes.json"
 NOS_GFS_WIND_DATA_FILE_NAME = "NOS_GFS_Wind_Data.json"
 NOS_GFS_RAIN_DATA_FILE_NAME = "NOS_GFS_Rain_Data.json"
-NOS_GFS_NODES_WIND_DATA_FILE_NAME = "NOS_GFS_Nodes_Wind_Data.json"
+# NOS_GFS_NODES_WIND_DATA_FILE_NAME = "NOS_GFS_Nodes_Wind_Data.json"
+WEATHER_GOV_GFS_NODES_WIND_DATA_FILE_NAME = "Weather_Gov_GFS_Nodes_Wind_Data.json"
 
 def extractLatitudeIndex(nodeIndex):
     return int(nodeIndex[1: nodeIndex.find(",")])
@@ -22,12 +27,13 @@ windMetadata = windDataset.__dict__
 print(windMetadata)
 print(windDataset.variables)
 
-rainDataset = nc.Dataset(METGET_GFS_RAIN_FILE_NAME)
-rainMetadata = rainDataset.__dict__
-print(rainMetadata)
-print(rainDataset.variables)
+# rainDataset = nc.Dataset(METGET_GFS_RAIN_FILE_NAME)
+# rainMetadata = rainDataset.__dict__
+# print(rainMetadata)
+# print(rainDataset.variables)
 
-coldStartDateText = METGET_GFS_WIND_FILE_NAME[34: 42] + "T" + METGET_GFS_WIND_FILE_NAME[42:44]
+windDatasetTimeDescription = windDataset.variables["time"].units
+coldStartDateText = windDatasetTimeDescription[14: 24] + "T" + windDatasetTimeDescription[25:]
 coldStartDate = datetime.fromisoformat(coldStartDateText)
 print("coldStartDate", coldStartDate)
 
@@ -119,8 +125,8 @@ if(initializeStationToNodeDistancesDict):
     with open(NOS_STATION_TO_GFS_NODE_DISTANCES_FILE_NAME, "w") as outfile:
         json.dump(stationToNodeDistancesDict, outfile)
 
-with open(NOS_STATION_TO_GFS_NODE_DISTANCES_FILE_NAME) as outfile:
-    stationToNodeDistancesDict = json.load(outfile)
+# with open(NOS_STATION_TO_GFS_NODE_DISTANCES_FILE_NAME) as outfile:
+#     stationToNodeDistancesDict = json.load(outfile)
   
 gfsNodes = {"NOS": {}}
     
@@ -137,8 +143,8 @@ if(initializeGFSNodesDict):
     with open(NOS_GFS_NODES_FILE_NAME, "w") as outfile:
         json.dump(gfsNodes, outfile)
 
-with open(NOS_GFS_NODES_FILE_NAME) as outfile:
-    gfsNodes = json.load(outfile)
+# with open(NOS_GFS_NODES_FILE_NAME) as outfile:
+#     gfsNodes = json.load(outfile)
 
 initializeGFSWindDataDict = False
 if(initializeGFSWindDataDict):
@@ -160,7 +166,7 @@ if(initializeGFSWindDataDict):
     with open(NOS_GFS_WIND_DATA_FILE_NAME, "w") as outfile:
         json.dump(gfsWindData, outfile)
         
-initializeGFSRainDataDict = True
+initializeGFSRainDataDict = False
 if(initializeGFSRainDataDict):
     gfsRainData = {}
     for nodeIndex in gfsNodes["NOS"].keys():
@@ -177,7 +183,7 @@ if(initializeGFSRainDataDict):
     with open(NOS_GFS_RAIN_DATA_FILE_NAME, "w") as outfile:
         json.dump(gfsRainData, outfile)
     
-initializeGFSNodesWindDataDict = False
+initializeGFSNodesWindDataDict = True
 if(initializeGFSNodesWindDataDict):
     gfsNodesWindData = {}
     for longitudeIndex in range(deltaNodesLongitude):
@@ -190,10 +196,10 @@ if(initializeGFSNodesWindDataDict):
             windsX = []
             windsY = []
             for index in range(timesteps):
-                windsX.append(windDataset.variables["wind_u"][index][longitudeIndex][latitudeIndex])
-                windsY.append(windDataset.variables["wind_v"][index][longitudeIndex][latitudeIndex])
+                windsX.append(float(windDataset.variables["wind_u"][index][longitudeIndex][latitudeIndex]))
+                windsY.append(float(windDataset.variables["wind_v"][index][longitudeIndex][latitudeIndex]))
             gfsNodesWindData[nodeIndex]["windsX"] = windsX
             gfsNodesWindData[nodeIndex]["windsY"] = windsY
     
-    with open(NOS_GFS_NODES_WIND_DATA_FILE_NAME, "w") as outfile:
+    with open(WEATHER_GOV_GFS_NODES_WIND_DATA_FILE_NAME, "w") as outfile:
         json.dump(gfsNodesWindData, outfile)

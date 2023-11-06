@@ -10,7 +10,9 @@ import json
 from Encoders import NumpyEncoder
         
 NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
+# NOS_WIND_FILE_NAME = "NOS_DEB_Wind.json"
 NOS_WIND_FILE_NAME = "NOS_Wind.json"
+
 
 with open(NOS_STATIONS_FILE_NAME) as stations_file:
     stationsDict = json.load(stations_file)
@@ -20,19 +22,20 @@ with open(NOS_STATIONS_FILE_NAME) as stations_file:
 stationIds = [8413320, 8447435, 8449130, 8452660, 8418150, 8454049, 8454000, 8411060, 8531680, 8452944]
 stationNames = ['Bar Harbor', 'Chatham', 'Nantucket', 'Newport', 'Portland', 'Quonset Point', 'Providence', 'Cutler Faris Wharf', 'Sandy Hook', 'Conimicut Light'] 
 
-# startDate = "20230914"
-# endDate = "20230919"
-# dateStartFormat = "2023-09-14"
+startDate = "20230914"
+endDate = "20230919"
+dateStartFormat = "2023-09-14"
+
+heightStartDate = "2023-09-14T00:00:00Z"
+heightEndDate = "2023-09-19T23:59:00Z"
+
+# Noreaster 12/23 festivus  storm 22, 23
+# startDate = "20221220"
+# endDate = "20221224"
+# dateStartFormat = "2022-12-20"
 # 
-# heightStartDate = "2023-09-14T00:00:00Z"
-# heightEndDate = "2023-09-19T23:59:00Z"
-
-startDate = "20221214"
-endDate = "20221219"
-dateStartFormat = "2022-12-14"
-
-heightStartDate = "2022-12-14T00:00:00Z"
-heightEndDate = "2022-12-19T23:59:00Z"
+# heightStartDate = "2022-12-20T00:00:00Z"
+# heightEndDate = "2022-12-24T23:59:59Z"
     
 badStations = []
 windDict = {}
@@ -48,8 +51,8 @@ for key in stationsDict["NOS"].keys():
 #     sensorFilename = stationDict["id"] + "_sensor"
     try:
 #     Once mat files are downloaded once, comment out this line to stop querying the API
-#     	urlretrieve(url, matFilename)
-#     	urlretrieve(heightURL, heightFilename)
+    	urlretrieve(url, matFilename)
+    	urlretrieve(heightURL, heightFilename)
 #     	urlretrieve(sensorURL, sensorFilename)
     	data = scipy.io.loadmat(matFilename)
     	unixTimes = data["IOOS_Wind"]["time"][0][0].flatten()
@@ -87,7 +90,7 @@ for key in stationsDict["NOS"].keys():
     			csvHeightTimes.append(datetime.timestamp(heightTime))
     			csvHeightValues.append(heightValue)
     	print("CSV and .mat same length? " + stationName, len(csvHeightTimes) == len(unixTimes))
-    	print("CSV height Times vs unixTimes len", len(csvheightTimes), len(unixTimes))
+    	print("CSV height Times vs unixTimes len", len(csvHeightTimes), len(unixTimes))
     	heightTime = datetime.timestamp(datetime(year=3000, month=1, day=1))
     	csvHeightTimes.append(heightTime)
     	heightIndex = 0
@@ -104,43 +107,3 @@ for key in stationsDict["NOS"].keys():
 # print(windDict)
 with open(NOS_WIND_FILE_NAME, "w") as outfile:
     json.dump(windDict, outfile, cls=NumpyEncoder)
-    	
-#     print(type(data.get("Wind_Speed")))
-#     print(type(data.get("Wind_Direction")))
-	
-# 	T=cat(1,T,(A.time/86400)+toff);
-# 	WS=cat(1,WS,(A.Wind_Speed));
-# 	WD=cat(1,WD,(A.Wind_Direction));
-# 	G=cat(1,G,(A.Wind_Gust));
-# 	Tstr=datestr(T);
-# 	
-# 	STNN=SS(i);
-# 	STNa=SSN{i};
-# 	
-# 	sidn=['STN' str0(i) '.WS']; eval([sidn '=' 'WS']);
-# 	sidn=['STN' str0(i) '.WD']; eval([sidn '=' 'WD']);
-# 	sidn=['STN' str0(i) '.T']; eval([sidn '=' 'T']);
-# 	sidn=['STN' str0(i) '.G']; eval([sidn '=' 'G']);
-# 	sidn=['STN' str0(i) '.SN']; eval([sidn '=' 'STNN']);
-# 	sidn=['STN' str0(i) '.SName']; eval([sidn '=' 'STNa']);
-# 	sidn=['STN' str0(i) '.Tstr']; eval([sidn '=' 'Tstr']);
-# 	
-# 	aa=aa+1;
-# 	STNS(aa)=i;
-#     end
-# end
-# % return
-# %%
-# figure
-# plot(T,WS,'LineWidth',2)
-# hold on
-# plot(T,G,'LineWidth',2)
-# datetick('x','mm/dd-HH','keepticks');     
-# legend('Wind Speed','Gust')
-# ylabel('Wind Speed (m/s)')
-# 
-# figure
-# plot(T,WD,'LineWidth',2)
-# datetick('x','mm/dd-HH','keepticks');     
-# legend('Wind Direction')
-# ylabel('Wind Direction (Heading)')

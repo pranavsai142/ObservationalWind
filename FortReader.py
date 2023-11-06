@@ -15,21 +15,23 @@ from datetime import datetime, timedelta
 # To see information on variables, use dataset.variables
 # To get data for a variable, use dataset.variables["time"]
 
-FORT_74_FILE_NAME = "fort.74.nc"
+# FORT_74_FILE_NAME = "fort.74.nc"
+FORT_74_FILE_NAME = "Lee_Floodwater_LeftTrack_Advisory36_fort.74.nc"
 NOS_STATIONS_FILE_NAME = "NOS_Stations.json"
-NOS_STATION_TO_NODE_DISTANCES_FILE_NAME = "NOS_Station_To_Node_Distances.json"
-NOS_ADCIRC_NODES_FILE_NAME = "NOS_ADCIRC_Nodes.json"
-NOS_ADCIRC_WIND_DATA_FILE_NAME = "NOS_ADCIRC_Wind_Data.json"
-NOS_ADCIRC_NODES_WIND_DATA_FILE_NAME = "NOS_ADCIRC_Nodes_Wind_Data.json"
+# NOS_STATION_TO_NODE_DISTANCES_FILE_NAME = "NOS_Station_To_Node_Distances.json"
+# NOS_ADCIRC_NODES_FILE_NAME = "NOS_ADCIRC_Nodes.json"
+# NOS_ADCIRC_WIND_DATA_FILE_NAME = "NOS_ADCIRC_Wind_Data.json"
+# NOS_ADCIRC_NODES_WIND_DATA_FILE_NAME = "NOS_ADCIRC_Nodes_Wind_Data.json"
+NOS_STATION_TO_NODE_DISTANCES_FILE_NAME = "NOS_Station_To_Floodwater_Node_Distances.json"
+NOS_ADCIRC_NODES_FILE_NAME = "NOS_Floodwater_Nodes.json"
+NOS_ADCIRC_WIND_DATA_FILE_NAME = "NOS_Floodwater_Wind_Data.json"
+NOS_ADCIRC_NODES_WIND_DATA_FILE_NAME = "NOS_Floodwater_Nodes_Wind_Data.json"
 
 windDataset = nc.Dataset(FORT_74_FILE_NAME)
 windMetadata = windDataset.__dict__
 
-windRunDescription = windMetadata["rundes"]
-windRunDescriptionColdStartIndex = windRunDescription.find("cs:")
-coldStartDateText = windRunDescription[windRunDescriptionColdStartIndex + 3: windRunDescriptionColdStartIndex + 17]
-# Insert a T to make date text a valid iso format
-coldStartDateText = coldStartDateText[0: 8] + "T" + coldStartDateText[8:]
+windDatasetTimeDescription = windDataset.variables["time"].units
+coldStartDateText = windDatasetTimeDescription[14: 24] + "T" + windDatasetTimeDescription[25:]
 coldStartDate = datetime.fromisoformat(coldStartDateText)
 print("coldStartDate", coldStartDate)
 
